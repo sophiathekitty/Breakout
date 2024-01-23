@@ -120,9 +120,9 @@ namespace IngameScript
             }
             public void Collide(ICanCollide ball)
             {
+                if(Color == unbreakable) return;
                 BreakoutBoard.score++;
-                if(Color != unbreakable) color--;
-                else color = colors.Length-1;
+                color--;
                 if (color < 0) { Visible = false; BreakoutBoard.score += 10; }
                 else { Color = colors[color % colors.Length]; }
             }

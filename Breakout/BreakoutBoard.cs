@@ -35,35 +35,64 @@ namespace IngameScript
             ScreenSprite scoreSprite;
             List<ScreenSprite> livesSprites = new List<ScreenSprite>();
             ScreenSprite gameOverSprite;
-            string[] brickLayouts = {"00000000000" +
+            ScreenSprite title;
+            int level = 0;
+            string[] brickLayouts = {
+                "00000000000" +
                 "00000000000" +
                 "66666666666" +
                 "55555555555" +
                 "44444444444" +
-                "33333333333", "66600000666" +
+                "33333333333",
+                "66600000666" +
                 "66600000666" +
                 "00005550000" +
                 "00005550000" +
                 "33300000333" +
                 "33300000333" +
                 "00004440000" +
-                "00004440000", "66006660066" +
-                "66006660066" +
-                "00000000000" +
-                "00664446600" +
-                "00664446600" +
-                "00000000000" +
+                "00004440000",
                 "66006660066" +
                 "66006660066" +
                 "00000000000" +
                 "00664446600" +
-                "00664446600", "", "", ""};
-            string boardLayout =
+                "00664446600" +
+                "00000000000" +
+                "66006660066" +
+                "66006660066" +
+                "00000000000" +
+                "00664446600" +
+                "00664446600",
                 "66066066066" +
                 "66066066066" +
-                "00733333700" +
+                "00113331100" +
                 "55455055455" +
-                "55045055455";
+                "55455055455" +
+                "00770007700" +
+                "33443334433",
+                "06606660660" +
+                "06606660660" +
+                "06606760660" +
+                "23456665432" +
+                "23456765432" +
+                "23756665732" +
+                "65432723456" +
+                "65732123756" +
+                "55566666555",
+                "67676767676" +
+                "66666666666" +
+                "67676767676" +
+                "66666666666" +
+                "67676767676" +
+                "66666666666" +
+                "67676767676" +
+                "66666666666" +
+                "67676767676" +
+                "66666666666" +
+                "67676767676" +
+                "66666666666" +
+                "66666666666"};
+
             public BreakoutBoard() : base(GridBlocks.GetTextSurface("main display"))
             {
                 BackgroundColor = Color.Black;
@@ -92,20 +121,23 @@ namespace IngameScript
                         AddSprite(brick);
                     }
                 }
+                title = new ScreenSprite(ScreenSprite.ScreenSpriteAnchor.Center, Vector2.Zero, 2.5f, Vector2.Zero, Color.White, "Monospace", "BREAKOUT", TextAlignment.CENTER, SpriteType.TEXT);
+                AddSprite(title);
+                title.Visible = false;
                 ResetBricks();
             }
             void ResetBricks()
             {
                 for(int i = 0; i < bricks.Count; i++)
                 {
-                    if(i >= boardLayout.Length) bricks[i].Visible = false;
+                    if(i >= brickLayouts[level].Length) bricks[i].Visible = false;
                     else
                     {
-                        if (boardLayout[i] == '0') bricks[i].Visible = false;
+                        if (brickLayouts[level][i] == '0') bricks[i].Visible = false;
                         else
                         {
                             bricks[i].Visible = true;
-                            bricks[i].Color = Brick.colors[boardLayout[i] - '1'];
+                            bricks[i].Color = Brick.colors[brickLayouts[level][i] - '1'];
                         }
                     }
                 }
@@ -121,47 +153,88 @@ namespace IngameScript
                 gameOverSprite.Visible = false;
             }
             Random rnd = new Random();
-            public override void Draw()
+            void RunGame()
             {
+                title.Visible = false;
+                scoreSprite.Visible = true;
                 int blocksLeft = 0;
                 ball.CollidesWith(paddle);
                 if (ball.Velocity.Length() > 5) ball.Velocity *= 0.99f;
                 foreach (Brick brick in bricks)
                 {
-                    if (brick.Visible && brick.Color != Brick.unbreakable)
+                    if (brick.Visible)
                     {
-                        blocksLeft++;
+                        if (brick.Color != Brick.unbreakable) blocksLeft++;
                         ball.CollidesWith(brick);
                     }
                 }
                 scoreSprite.Data = score.ToString();
-                if(blocksLeft == 0)
+                if (blocksLeft == 0)
                 {
+                    level++;
+                    if (level >= brickLayouts.Length) level = 0;
                     ResetBricks();
                     lives++;
                     inGame = false;
-                    if(lives > 3) lives = 3;
+                    if (lives > 3) lives = 3;
                 }
                 for (int i = 0; i < livesSprites.Count; i++)
                 {
                     if (i < lives) livesSprites[i].Visible = true;
                     else livesSprites[i].Visible = false;
                 }
-                if(gameOver)
+                if (gameOver)
                 {
                     ball.Visible = false;
                     paddle.Visible = false;
                     gameOverSprite.Visible = true;
-                    if(input.C)
+                    if (input.C)
                     {
                         gameOver = false;
                         score = 0;
                         lives = 3;
+                        level = 0;
                         ResetBricks();
                         ball.Visible = true;
                         paddle.Visible = true;
                         gameOverSprite.Visible = false;
                         inGame = false;
+                    }
+                }
+            }
+            bool playerPresent = false;
+            public override void Draw()
+            {
+                if (input.PlayerPresent)
+                {
+                    if (!playerPresent)
+                    {
+                        playerPresent = true;
+                        inGame = false;
+                        ball.Visible = true;
+                        paddle.Visible = true;
+
+                    }
+                    RunGame();
+                }
+                else
+                {
+                    if (playerPresent)
+                    {
+                        level = 0;
+                        score = 0;
+                        lives = 3;
+                        ResetBricks();
+                    }
+                    playerPresent = false;
+                    title.Visible = true;
+                    scoreSprite.Visible = false;
+                    ball.Visible = false;
+                    paddle.Visible = false;
+                    gameOverSprite.Visible = false;
+                    for (int i = 0; i < livesSprites.Count; i++)
+                    {
+                        livesSprites[i].Visible = false;
                     }
                 }
                 base.Draw();
